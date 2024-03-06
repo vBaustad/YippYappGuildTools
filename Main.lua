@@ -9,31 +9,18 @@ SlashCmdList["YYGT"] = function(msg)
     YippYappHandler()
 end
 
-local function YippYappHandler()
-
+function YippYappHandler()
+    
     RequestLatestProfessionData() 
     InitializeProfessionsFeature(YippYappGuildTools_ProfessionsDB)
-
-    
-    YippYappGuildTools_BlacklistDB = {}
-    --InitializeBlacklistFeature(YippYappGuildTools_BlacklistDB)
-    AddToBlacklist("Lorrden", "Warrior", "podadadsadsd  dhasdha hhad hha ha ha hha hnmadn ")  
-    AddToBlacklist("re", "Rogue", "dadagg   agagag agagagsasf   sdanmadn ")  
-  
-
-    --UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
-
-    --IsCharacterBlacklisted("Ryggsekken")
     
 end
 
 local function checkguild()
     local guildName = GetGuildInfo("player")
-    if guildName and guildName == "YippYapp" then
-        print("Character is in YippYapp, initializing addon.")
+    if guildName and guildName == "YippYapp" then        
         return true
-    else
-        print("Character is not in YippYapp, addon will not be initialized.")
+    else        
         return false
     end
 end

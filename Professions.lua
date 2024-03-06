@@ -58,8 +58,7 @@ local function SendProfessionDataToGuild(characterName)
     end
 end
 
-function RequestLatestProfessionData() 
-    print("SendCommMessage") 
+function RequestLatestProfessionData()     
     AceComm:SendCommMessage(ADDON_PREFIX, "request", "GUILD")
 end
 
@@ -87,9 +86,17 @@ function InitializeProfessionsFeature(YippYappGuildTools_ProfessionsDB)
         }
     end
 
-    --UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)
     SendProfessionDataToGuild(characterName) 
 end
+
+-- Helper function to compare tables (simplified and specific for your use case)
+    function AreTablesEqual(table1, table2)
+        if #table1 ~= #table2 then return false end
+        for i, v in ipairs(table1) do
+            if table2[i] ~= v then return false end
+        end
+        return true
+    end
 
 -- Registering the addon communication channel
 AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sender)    
@@ -108,10 +115,15 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
     else
         local success, characterData = AceSerializer:Deserialize(message)
         if success then
-            if not AreTablesEqual(YippYappGuildTools_ProfessionsDB[characterData.name], characterData) then
+            if YippYappGuildTools_ProfessionsDB[characterName] then
+                
+            else
                 YippYappGuildTools_ProfessionsDB[characterData.name] = characterData
-                --UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)
+                UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)
             end
+            -- if not AreTablesEqual(YippYappGuildTools_ProfessionsDB[characterData.name], characterData) then
+                
+            -- end
         else
             print("Failed to deserialize data from", sender)
         end
@@ -119,11 +131,3 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
 end) 
 
 
--- Helper function to compare tables (simplified and specific for your use case)
-function AreTablesEqual(table1, table2)
-    if #table1 ~= #table2 then return false end
-    for i, v in ipairs(table1) do
-        if table2[i] ~= v then return false end
-    end
-    return true
-end

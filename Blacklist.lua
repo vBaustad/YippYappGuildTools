@@ -30,7 +30,7 @@ function AddToBlacklist(characterName, characterClass, blacklistReason)
         print(characterName .. " is already in the blacklist.")
     end
     
-    --SendBlacklistDataToGuild(characterName) 
+    SendBlacklistDataToGuild(characterName) 
 end
 
 local function RemoveFromBlacklist(characterName)
@@ -67,7 +67,7 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
             for characterName, characterClass in pairs(receivedData) do
                 YippYappGuildTools_BlacklistDB[characterName] = characterClass
             end
-            --UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
         else
             print("Failed to deserialize data from", sender)
         end

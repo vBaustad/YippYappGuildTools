@@ -36,5 +36,9 @@
         "AddonCompartmentFrame",
         "GRAY_FONT_COLOR_CODE",
         "BOOKTYPE_SPELL"
+    ],
+    "Lua.diagnostics.disable": [
+        "unused-function",
+        "inject-field"
     ]
 }

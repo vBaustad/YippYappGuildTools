@@ -1,25 +1,37 @@
 
+function ClearDynamicContent(contentArea)
+    if contentArea.dynamicContentList then
+        for _, content in ipairs(contentArea.dynamicContentList) do
+            content:Hide()
+            content:SetParent(nil)
+        end
+        -- Clear the list after cleaning up
+        contentArea.dynamicContentList = {}
+    end
+end
+
 function ShowHideFrame(tabIndex)
     local frame = _G["YippYappDataDisplayFrame"]
-    if not frame then
-        frame = CreateDisplayFrame()  -- Ensure the frame is created if it doesn't exist
-    end
+    
+    if not frame then -- Ensure the frame is created if it doesn't exist
+        frame = CreateDisplayFrame()
+        UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+        UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)         
+        frame:Show() 
+        Tab_OnClick(frame.tabs[tabIndex], frame)   
 
-    if frame:IsShown() and frame.selectedTab == tabIndex then
+    elseif frame:IsShown() and frame.selectedTab == tabIndex then
         frame:Hide()
     else
-        if not frame:IsShown() then
-            frame:Show()
 
-            
-        end
         UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
-        UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)
+        UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)  
+        frame:Show() 
+
         -- Update 'frame.selectedTab' to reflect the newly selected tab
         frame.selectedTab = tabIndex
         PanelTemplates_SetTab(frame, tabIndex)
-        Tab_OnClick(frame.tabs[tabIndex], frame)
-        
+        Tab_OnClick(frame.tabs[tabIndex], frame)        
     end
 end
 
@@ -60,23 +72,27 @@ function CreateTabs(frame)
     Tab_OnClick(frame.tabs[1], frame)      
 end
 
-function CreateBlacklistInputFields(inputArea)
-        
-    local nameInput = CreateBlacklistInput("Name  ", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -10)
-    local classInput = CreateBlacklistInput("Class   ", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -34)
-    local reasonInput = CreateBlacklistInput("Reason", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -56)
-
-    local submitButton = CreateFrame("Button", nil, inputArea, "GameMenuButtonTemplate")
-    submitButton:SetPoint("TOPLEFT", inputArea, "BOTTOMLEFT", 5, 35)
-    submitButton:SetSize(120, 25)
-    submitButton:SetText("Submit")
-    submitButton:SetScript("OnClick", function()
-        -- Clear inputs after submission
-        nameInput:SetText("")
-        classInput:SetText("")
-        reasonInput:SetText("")
-    end)
-
+local function ValidateInputs(name, class, reason)
+    -- Define a list of valid classes
+    local validClasses = {
+        ["Warrior"] = true,
+        ["Paladin"] = true,
+        ["Hunter"] = true,
+        ["Rogue"] = true,
+        ["Priest"] = true,
+        ["Shaman"] = true,
+        ["Mage"] = true,
+        ["Warlock"] = true,
+        ["Druid"] = true,
+    }
+    
+    if name == "" or class == "" or reason == "" then
+        return false, "All fields must be filled out."
+    end
+    if not validClasses[class] then
+        return false, "Invalid class."
+    end
+    return true, ""
 end
 
 function CreateBlacklistInput(labelText, parent, point, relativeTo, relativePoint, offsetX, offsetY)
@@ -93,6 +109,43 @@ function CreateBlacklistInput(labelText, parent, point, relativeTo, relativePoin
     input:SetFrameLevel(input:GetFrameLevel() + 1)  -- Make sure it's above its parent   
     
     return input
+end
+
+function CreateBlacklistInputFields(inputArea)       
+
+    local nameInput = CreateBlacklistInput("Name  ", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -10)
+    local classInput = CreateBlacklistInput("Class   ", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -34)
+    local reasonInput = CreateBlacklistInput("Reason", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -56)
+
+    local submitButton = CreateFrame("Button", nil, inputArea, "GameMenuButtonTemplate")
+    submitButton:SetPoint("TOPLEFT", inputArea, "BOTTOMLEFT", 5, 35)
+    submitButton:SetSize(120, 25)
+    submitButton:SetText("Submit")
+    submitButton:SetScript("OnClick", function()
+        -- Grab inputs
+        local name = nameInput:GetText()
+        local class = classInput:GetText()
+        local reason = reasonInput:GetText()
+
+        -- Validate inputs
+        local isValid, errorMessage = ValidateInputs(name, class, reason)
+        if isValid then
+            -- Add to blacklist (ensure your AddToBlacklist function handles this correctly)
+            AddToBlacklist(name, class, reason)
+            
+            -- Clear inputs after successful submission
+            nameInput:SetText("")
+            classInput:SetText("")
+            reasonInput:SetText("")
+
+            -- Update the blacklist tab content with the new data
+            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)            
+        else
+            -- Display error message to the user
+            print(errorMessage) -- Adjust this to display the message in your UI
+        end
+    end)
+
 end
 
 function CreateInputArea(frame)
@@ -129,9 +182,9 @@ function CreateContentAreas(frame)
     blacklistContent:Hide()  -- Start hidden
 
     -- Add title for Blacklist Content
-    -- local blacklistTitle = blacklistContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    -- blacklistTitle:SetPoint("TOPLEFT", blacklistContent, "TOPLEFT", 10, 0)
-    -- blacklistTitle:SetText("FOOKIN BLACKLISTED")    
+    local blacklistTitle = blacklistContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    blacklistTitle:SetPoint("TOPLEFT", blacklistContent, "TOPLEFT", 10, 0)
+    blacklistTitle:SetText("FOOKIN BLACKLISTED")    
 
     frame.professionsContent = professionsContent
     frame.blacklistContent = blacklistContent
@@ -215,16 +268,18 @@ function CreateDisplayFrame()
         CreateBottomFrame(frame)
         CreateInputArea(frame)
         Tab_OnClick(frame.tabs[1], frame)
+
         _G["YippYappDataDisplayFrame"] = frame
     end
     return _G["YippYappDataDisplayFrame"]
     
 end
 
-function createHeader(parent, text, xPosition, yPosition)
+function createHeader(parent, text, xPosition, yPosition)    
     local header = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     header:SetPoint("TOPLEFT", parent, "TOPLEFT", xPosition, yPosition)
     header:SetText(text)
+    return header
 end
 
 function createColumnText(parent, text, xPosition, yPosition, color)
@@ -234,6 +289,7 @@ function createColumnText(parent, text, xPosition, yPosition, color)
         text = string.format("|cFF%02x%02x%02x%s|r", color.r * 255, color.g * 255, color.b * 255, text)
     end
     textLine:SetText(text)
+    return textLine
 end
 
 function createHorizontalLine(parent, xStart, xEnd, yPosition)
@@ -241,7 +297,8 @@ function createHorizontalLine(parent, xStart, xEnd, yPosition)
     line:SetColorTexture(1, 1, 1, 0.5)  -- Set color and alpha of the line; adjust as needed
     line:SetPoint("TOPLEFT", parent, "TOPLEFT", xStart, yPosition)
     line:SetPoint("TOPRIGHT", parent, "TOPLEFT", xEnd, yPosition)
-    line:SetHeight(1)  -- Line thickness
+    line:SetHeight(1)  -- Line thickness    
+    return line
 end
 
 function UpdateProfessionsContent(guildMembersData)
@@ -249,15 +306,11 @@ function UpdateProfessionsContent(guildMembersData)
     if not frame then
         frame = CreateDisplayFrame()
     end
-    
-    -- Determine the active content area. For this example, we'll update the professionsContent.
-    local contentArea = frame.professionsContent 
 
-    -- Clear previous content
-    for _, child in ipairs({contentArea:GetChildren()}) do
-        child:Hide()
-        child:SetParent(nil)
-    end
+    -- Determine the active content area. For this example, we'll update the professionsContent.
+    local contentArea = frame.professionsContent
+
+    ClearDynamicContent(contentArea)
 
     local spacing = 15
     local initialYOffset = -20  -- Initial Y offset from the top of the content area
@@ -266,13 +319,17 @@ function UpdateProfessionsContent(guildMembersData)
     local professionColumnX = 90
     local lastUpdatedColumnX = 370
 
+    -- Ensure dynamicContentList is initialized
+    if not contentArea.dynamicContentList then
+        contentArea.dynamicContentList = {}
+    end
     -- Headers
-    createHeader(contentArea, "Name", nameColumnX, initialYOffset)
-    createHeader(contentArea, "Professions", professionColumnX, initialYOffset)
-    createHeader(contentArea, "Last Updated", lastUpdatedColumnX, initialYOffset)
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, "Name", nameColumnX, initialYOffset))
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, "Professions", professionColumnX, initialYOffset))
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, "Last Updated", lastUpdatedColumnX, initialYOffset))
 
     -- Horizontal line under headers
-    createHorizontalLine(contentArea, 0, frame:GetWidth(), initialYOffset - 15)
+    table.insert(contentArea.dynamicContentList, createHorizontalLine(contentArea, 0, frame:GetWidth(), initialYOffset - 15))
 
     local contentHeight = initialYOffset - 5 - spacing  -- Start below the headers
 
@@ -291,19 +348,20 @@ function UpdateProfessionsContent(guildMembersData)
             local professionsLine = table.concat(professionsStrs, ", ")
             local classColor = RAID_CLASS_COLORS[string.upper(data.class)]
             
-            createColumnText(contentArea, data.name, nameColumnX, contentHeight, classColor)
-            createColumnText(contentArea, professionsLine, professionColumnX, contentHeight)
-            createColumnText(contentArea, data.lastUpdated or "N/A", lastUpdatedColumnX, contentHeight)
+            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.name, nameColumnX, contentHeight, classColor))
+            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, professionsLine, professionColumnX, contentHeight))
+            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.lastUpdated or "N/A", lastUpdatedColumnX, contentHeight))
 
-            -- Optional: Draw a line after each entry
-            createHorizontalLine(contentArea, 0, frame:GetWidth(), contentHeight - 12)
+            -- Draw a line after each entry and track it
+            table.insert(contentArea.dynamicContentList, createHorizontalLine(contentArea, 0, frame:GetWidth(), contentHeight - 12))
 
             -- Increment contentHeight for the next entry
             contentHeight = contentHeight - spacing 
         end
     end
      
-    contentArea:SetSize(frame:GetWidth(), initialYOffset)
+    contentArea:SetSize(frame:GetWidth(), initialYOffset)    
+    
 end
 
 function UpdateBlacklistContent(blacklistData)
@@ -315,11 +373,7 @@ function UpdateBlacklistContent(blacklistData)
     -- Determine the active content area. For this example, we'll update the professionsContent.
     local contentArea = frame.blacklistContent 
 
-    -- Clear previous content
-    for _, child in ipairs({contentArea:GetChildren()}) do
-        child:Hide()
-        child:SetParent(nil)
-    end
+    ClearDynamicContent(contentArea)
 
     local spacing = 15
     local initialYOffset = -20  -- Initial Y offset from the top of the content area
@@ -327,8 +381,13 @@ function UpdateBlacklistContent(blacklistData)
     local nameColumnX = 10
     local reasonColumnX = 90
 
+    -- Ensure dynamicContentList is initialized
+    if not contentArea.dynamicContentList then
+        contentArea.dynamicContentList = {}
+    end
+
     -- Headers
-    createHeader(contentArea, "Name", nameColumnX, initialYOffset)
+    createHeader(contentArea, "Blacklisted", nameColumnX, initialYOffset)
     createHeader(contentArea, "Reason", reasonColumnX, initialYOffset)
 
     -- Horizontal line under headers
@@ -341,17 +400,17 @@ function UpdateBlacklistContent(blacklistData)
             local classColor = RAID_CLASS_COLORS[string.upper(data.class)]   
 
 
-            createColumnText(contentArea, data.name, nameColumnX, contentHeight, classColor)
-            createColumnText(contentArea, data.reason, reasonColumnX, contentHeight)
+            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.name, nameColumnX, contentHeight, classColor))
+            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.reason, reasonColumnX, contentHeight))
+            
 
             -- Creating a horizontal line
-            createHorizontalLine(contentArea, 0, frame:GetWidth(), contentHeight - 12)
+            table.insert(contentArea.dynamicContentList, createHorizontalLine(contentArea, 0, frame:GetWidth(), contentHeight - 12))
 
             contentHeight = contentHeight - spacing   -- Updated to include text height
         end
-    end
-    
-    contentArea:SetSize(frame:GetWidth(), initialYOffset)
+    end    
+    contentArea:SetSize(frame:GetWidth(), initialYOffset)  
     
 end
 
