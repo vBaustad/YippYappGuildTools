@@ -1,4 +1,3 @@
-
 function ClearDynamicContent(contentArea)
     if contentArea.dynamicContentList then
         for _, content in ipairs(contentArea.dynamicContentList) do
@@ -37,7 +36,7 @@ end
 
 function CreateTabs(frame)
     frame.tabs = {}
-    local titles = {"Professions", "Blacklist"}
+    local titles = {localeTable.professions, localeTable.blacklisted}
 
     for i, title in ipairs(titles) do
         local tab = CreateFrame("Button", "$parentTab"..i, frame, "CharacterFrameTabButtonTemplate")
@@ -72,6 +71,10 @@ function CreateTabs(frame)
     Tab_OnClick(frame.tabs[1], frame)      
 end
 
+local function Capitalize(str)
+    return str:sub(1,1):upper() .. str:sub(2):lower()
+end
+
 local function ValidateInputs(name, class, reason)
     -- Define a list of valid classes
     local validClasses = {
@@ -86,6 +89,8 @@ local function ValidateInputs(name, class, reason)
         ["Druid"] = true,
     }
     
+    class = Capitalize(class:lower())
+    
     if name == "" or class == "" or reason == "" then
         return false, "All fields must be filled out."
     end
@@ -95,32 +100,53 @@ local function ValidateInputs(name, class, reason)
     return true, ""
 end
 
-function CreateBlacklistInput(labelText, parent, point, relativeTo, relativePoint, offsetX, offsetY)
+-- function CreateBlacklistInput(labelText, parent, point, relativeTo, relativePoint, offsetX, offsetY)
+--     local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+--     label:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
+--     label:SetText(labelText)
+
+--     local input = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+--     input:SetPoint("LEFT", label, "RIGHT", 10, 0)
+--     input:SetSize(150, 20)
+--     input:SetAutoFocus(false)  -- Avoid automatic focus
+--     input:SetFontObject("ChatFontNormal")
+--     input:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+--     input:SetFrameLevel(input:GetFrameLevel() + 1)  -- Make sure it's above its parent   
+    
+--     return input
+-- end
+
+function CreateBlacklistInput(labelText, parent, labelPoint, inputPoint, relativeTo, offsetX, offsetY, labelWidth, inputWidth)
     local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
+    label:SetPoint(labelPoint, relativeTo, offsetX, offsetY)
     label:SetText(labelText)
+    label:SetWidth(labelWidth)
 
     local input = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
-    input:SetPoint("LEFT", label, "RIGHT", 10, 0)
-    input:SetSize(150, 20)
+    -- Adjust input position to be aligned with the frame, but shifted right to accommodate label
+    input:SetPoint(inputPoint, label, "TOPRIGHT", -15, 5) -- Offset adjusted for visual alignment
+    input:SetSize(inputWidth, 20)
     input:SetAutoFocus(false)  -- Avoid automatic focus
     input:SetFontObject("ChatFontNormal")
     input:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-    input:SetFrameLevel(input:GetFrameLevel() + 1)  -- Make sure it's above its parent   
-    
+    input:SetFrameLevel(parent:GetFrameLevel() + 1)  -- Ensure input is above the label in the frame stack
+
     return input
 end
 
 function CreateBlacklistInputFields(inputArea)       
 
-    local nameInput = CreateBlacklistInput("Name  ", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -10)
-    local classInput = CreateBlacklistInput("Class   ", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -34)
-    local reasonInput = CreateBlacklistInput("Reason", inputArea, "TOPLEFT", inputArea, "TOPLEFT", 10, -56)
+    local labelWidth = 100
+    local inputWidth = 150
+    local nameInput = CreateBlacklistInput(localeTable.inputName, inputArea, "TOPLEFT", "TOPLEFT", inputArea, -15, -13, labelWidth, inputWidth)
+    local classInput = CreateBlacklistInput(localeTable.inputClass, inputArea, "TOPLEFT", "TOPLEFT", inputArea, -15, -35, labelWidth, inputWidth)
+    local reasonInput = CreateBlacklistInput(localeTable.inputReason, inputArea, "TOPLEFT", "TOPLEFT", inputArea, -15, -57, labelWidth, inputWidth)
 
+    --Submit button
     local submitButton = CreateFrame("Button", nil, inputArea, "GameMenuButtonTemplate")
     submitButton:SetPoint("TOPLEFT", inputArea, "BOTTOMLEFT", 5, 35)
     submitButton:SetSize(120, 25)
-    submitButton:SetText("Submit")
+    submitButton:SetText(localeTable.submitButton)
     submitButton:SetScript("OnClick", function()
         -- Grab inputs
         local name = nameInput:GetText()
@@ -137,20 +163,48 @@ function CreateBlacklistInputFields(inputArea)
             nameInput:SetText("")
             classInput:SetText("")
             reasonInput:SetText("")
-
-            -- Update the blacklist tab content with the new data
-            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)            
-        else
-            -- Display error message to the user
-            print(errorMessage) -- Adjust this to display the message in your UI
+            
+            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB) 
+            ShowHideFrame(2)           
+        else            
+            UpdateStatusReport(errorMessage)
         end
     end)
 
+    -- Remove Button
+    local removeButton = CreateFrame("Button", nil, inputArea, "GameMenuButtonTemplate")
+    removeButton:SetPoint("LEFT", submitButton, "RIGHT", 5, 0)
+    removeButton:SetSize(120, 25)
+    removeButton:SetText(localeTable.removeButton)
+    removeButton:SetScript("OnClick", function()
+        local name = nameInput:GetText()
+        name = Capitalize(name)
+        if name ~= "" then
+            RemoveFromBlacklist(name)
+            UpdateStatusReport(name.." removed from blacklist")
+            -- Update the blacklist tab content with the new data
+            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+            ShowHideFrame(2) 
+        else
+            -- Display error message if name input is empty
+            UpdateStatusReport("Please enter a name to remove.")
+        end
+    end)
+
+    -- Status Report Area
+    local statusReport = inputArea:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    statusReport:SetPoint("TOPLEFT", nameInput, "TOPRIGHT", 10, 0)
+    statusReport:SetWidth(inputArea:GetWidth())
+    statusReport:SetJustifyH("LEFT")
+
+    function UpdateStatusReport(message)
+        statusReport:SetText(message)
+    end
 end
 
 function CreateInputArea(frame)
     
-    local inputArea = CreateFrame("Frame", nil, frame, "BackdropTemplate")  -- Removed the "$parentBlacklistContent" name to avoid naming conflicts
+    local inputArea = CreateFrame("Frame", nil, frame, "BackdropTemplate") 
     inputArea:SetHeight(110)  -- Adjust height as needed
     inputArea:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 25)
     inputArea:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -25, 14)
@@ -162,8 +216,7 @@ function CreateInputArea(frame)
     })
     inputArea:SetFrameLevel(frame:GetFrameLevel() + 1)
     frame.inputArea = inputArea    
-
-    -- Placeholder for creating inputs, to be implemented next
+   
     CreateBlacklistInputFields(inputArea)
 end
 
@@ -182,9 +235,9 @@ function CreateContentAreas(frame)
     blacklistContent:Hide()  -- Start hidden
 
     -- Add title for Blacklist Content
-    local blacklistTitle = blacklistContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    blacklistTitle:SetPoint("TOPLEFT", blacklistContent, "TOPLEFT", 10, 0)
-    blacklistTitle:SetText("FOOKIN BLACKLISTED")    
+    -- local blacklistTitle = blacklistContent:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    -- blacklistTitle:SetPoint("TOPLEFT", blacklistContent, "TOPLEFT", 10, 0)
+    -- blacklistTitle:SetText("FOOKIN BLACKLISTED")    
 
     frame.professionsContent = professionsContent
     frame.blacklistContent = blacklistContent
@@ -324,9 +377,9 @@ function UpdateProfessionsContent(guildMembersData)
         contentArea.dynamicContentList = {}
     end
     -- Headers
-    table.insert(contentArea.dynamicContentList, createHeader(contentArea, "Name", nameColumnX, initialYOffset))
-    table.insert(contentArea.dynamicContentList, createHeader(contentArea, "Professions", professionColumnX, initialYOffset))
-    table.insert(contentArea.dynamicContentList, createHeader(contentArea, "Last Updated", lastUpdatedColumnX, initialYOffset))
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, localeTable.name, nameColumnX, initialYOffset))
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, localeTable.professions, professionColumnX, initialYOffset))
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, localeTable.lastUpdated, lastUpdatedColumnX, initialYOffset))
 
     -- Horizontal line under headers
     table.insert(contentArea.dynamicContentList, createHorizontalLine(contentArea, 0, frame:GetWidth(), initialYOffset - 15))
@@ -336,7 +389,7 @@ function UpdateProfessionsContent(guildMembersData)
     for _, data in pairs(guildMembersData) do
         if next(data.professions) ~= nil then
             local professionsStrs = {}
-            for _, profession in ipairs(data.professions) do            
+            for _, profession in ipairs(data.professions) do  
                 if profession[2] and profession[2] ~= "" then  -- Check if spellSubName is not empty
                     professionStr = string.format("%s - %s", profession[1] or "N/A", profession[2])
                 else
@@ -360,7 +413,8 @@ function UpdateProfessionsContent(guildMembersData)
         end
     end
      
-    contentArea:SetSize(frame:GetWidth(), initialYOffset)    
+    contentArea:SetSize(frame:GetWidth(), initialYOffset) 
+    frame:Hide()   
     
 end
 
@@ -387,11 +441,11 @@ function UpdateBlacklistContent(blacklistData)
     end
 
     -- Headers
-    createHeader(contentArea, "Blacklisted", nameColumnX, initialYOffset)
-    createHeader(contentArea, "Reason", reasonColumnX, initialYOffset)
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, localeTable.blacklisted, nameColumnX, initialYOffset))
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, localeTable.reason, reasonColumnX, initialYOffset))
 
     -- Horizontal line under headers
-    createHorizontalLine(contentArea, 0, frame:GetWidth(), initialYOffset - 15)
+    table.insert(contentArea.dynamicContentList, createHorizontalLine(contentArea, 0, frame:GetWidth(), initialYOffset - 15))
 
     local contentHeight = initialYOffset - 5 - spacing  -- Start below the headers
 
@@ -411,6 +465,6 @@ function UpdateBlacklistContent(blacklistData)
         end
     end    
     contentArea:SetSize(frame:GetWidth(), initialYOffset)  
-    
+    frame:Hide()
 end
 

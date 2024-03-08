@@ -6,12 +6,14 @@ YippYappGuildTools_BlacklistDB = YippYappGuildTools_BlacklistDB or {}
 
 SLASH_YYGT1 = "/YYGT"
 SlashCmdList["YYGT"] = function(msg)
-    YippYappHandler()
+    ShowHideFrame(1)
 end
 
 function YippYappHandler()
     
     RequestLatestProfessionData() 
+    RequestLatestBlacklistData()
+
     InitializeProfessionsFeature(YippYappGuildTools_ProfessionsDB)
     
 end
@@ -28,6 +30,7 @@ end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:SetScript("OnEvent", function(self, event, ...)
     local arg1 = ...
     if event == "PLAYER_LOGIN" then
@@ -36,9 +39,12 @@ frame:SetScript("OnEvent", function(self, event, ...)
             if result then
                 CreateMinimapButton()
                 YippYappHandler()
-                
+
             end
         end)
+    end
+    if event == "GROUP_ROSTER_UPDATE" then                
+        checkPartyMembersAgainstBlacklist()
     end
     -- if event == "ADDON_LOADED" and arg1 == "YippYappGuildTools" then
     --     -- Call the function to create and display the minimap button
