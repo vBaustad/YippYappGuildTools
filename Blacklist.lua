@@ -2,6 +2,10 @@ local ADDON_PREFIX = "YYBlacklist"
 local AceComm = LibStub("AceComm-3.0")
 local AceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 
+function RemoveFromBlacklist(characterName)
+    YippYappGuildTools_BlacklistDB[characterName] = nil
+end
+
 local function SerializeBlacklistData()    
     local dataToSerialize = YippYappGuildTools_BlacklistDB
     local serializedString = AceSerializer:Serialize(dataToSerialize)
@@ -27,23 +31,50 @@ function AddToBlacklist(characterName, characterClass, blacklistReason)
         YippYappGuildTools_BlacklistDB[characterName] = characterInfo        
     else
         -- If the character is already in the blacklist, you might want to update or skip
-        print(characterName .. " is already in the blacklist.")
+        print(string.format(localeTable["alreadyInBlacklist"], characterName))
     end
     
     SendBlacklistDataToGuild(characterName) 
 end
 
-local function RemoveFromBlacklist(characterName)
-    YippYappGuildTools_BlacklistDB[characterName] = nil
-end
-
 function IsCharacterBlacklisted(characterName)
     if YippYappGuildTools_BlacklistDB[characterName] then
-        print(characterName .. " is blacklisted as a " .. YippYappGuildTools_BlacklistDB[characterName].class)
+        print(string.format(localeTable["blacklistedAsClass"], characterName, YippYappGuildTools_BlacklistDB[characterName].class))        
         return true
     else
-        print(characterName .. " is not in the blacklist.")
+        print(string.format(localeTable["notInBlacklist"], characterName))
         return false
+    end
+end
+
+function checkPartyMembersAgainstBlacklist()
+
+    if not IsInGroup() then
+        blacklistNotificationPlayed = false -- Reset flag when not in a group
+        return
+    end
+
+    local numGroupMembers = GetNumGroupMembers()
+    local blacklistMemberFound = false
+
+    for i = 1, numGroupMembers do
+        -- For party use 'partyN', for raid 'raidN'
+        local unitId = IsInRaid() and "raid" .. i or "party" .. i
+        local name = UnitName(unitId)
+        local characterName = name
+
+        if YippYappGuildTools_BlacklistDB[characterName] then
+            blacklistMemberFound = true
+            if not blacklistNotificationPlayed then
+                PlaySound(8959) -- Play a notification sound, this ID is an example
+                print(characterName .. " is in your blacklist!")
+                blacklistNotificationPlayed = true
+            end
+            break-- Exit the loop after finding the first blacklisted member  
+        end
+    end
+    if not blacklistMemberFound then
+        blacklistNotificationPlayed = false -- Reset flag if no blacklisted members are found
     end
 end
 
@@ -69,7 +100,7 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
             end
             UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
         else
-            print("Failed to deserialize data from", sender)
+            print(string.format(localeTable.failedToDeserialize, sender))
         end
     end
 end) 

@@ -35,7 +35,9 @@
         "ChatEdit_GetActiveWindow",
         "AddonCompartmentFrame",
         "GRAY_FONT_COLOR_CODE",
-        "BOOKTYPE_SPELL"
+        "BOOKTYPE_SPELL",
+        "class",
+        "localeTable"
     ],
     "Lua.diagnostics.disable": [
         "unused-function",

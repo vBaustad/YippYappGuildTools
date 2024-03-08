@@ -46,7 +46,7 @@ local function SerializeProfessionData(characterName)
         local serializedString = AceSerializer:Serialize(dataToSerialize)
         return serializedString
     else
-        print("Character data for serialization not found.")
+        print(string.format(localeTable.failedToSerialize))
         return nil
     end
 end
@@ -125,7 +125,7 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
                 
             -- end
         else
-            print("Failed to deserialize data from", sender)
+            print(string.format(localeTable.failedToDeserialize, sender))
         end
     end
 end) 

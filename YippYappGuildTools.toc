@@ -12,6 +12,7 @@ Libs/LibDBIcon-1.0/lib.xml
 Libs/LibDataBroker-1.1/LibDataBroker-1.1.lua
 Libs/LibStub/LibStub.lua
 
+Localization.lua
 CharacterInfo.lua
 Professions.lua
 Blacklist.lua
