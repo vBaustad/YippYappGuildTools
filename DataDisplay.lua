@@ -100,22 +100,6 @@ local function ValidateInputs(name, class, reason)
     return true, ""
 end
 
--- function CreateBlacklistInput(labelText, parent, point, relativeTo, relativePoint, offsetX, offsetY)
---     local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
---     label:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
---     label:SetText(labelText)
-
---     local input = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
---     input:SetPoint("LEFT", label, "RIGHT", 10, 0)
---     input:SetSize(150, 20)
---     input:SetAutoFocus(false)  -- Avoid automatic focus
---     input:SetFontObject("ChatFontNormal")
---     input:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
---     input:SetFrameLevel(input:GetFrameLevel() + 1)  -- Make sure it's above its parent   
-    
---     return input
--- end
-
 function CreateBlacklistInput(labelText, parent, labelPoint, inputPoint, relativeTo, offsetX, offsetY, labelWidth, inputWidth)
     local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     label:SetPoint(labelPoint, relativeTo, offsetX, offsetY)
@@ -400,7 +384,7 @@ function UpdateProfessionsContent(guildMembersData)
             
             local professionsLine = table.concat(professionsStrs, ", ")
             local classColor = RAID_CLASS_COLORS[string.upper(data.class)]
-            
+            --print("character: " .. data.name .. " " .. "last updated: " .. data.lastUpdated)
             table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.name, nameColumnX, contentHeight, classColor))
             table.insert(contentArea.dynamicContentList, createColumnText(contentArea, professionsLine, professionColumnX, contentHeight))
             table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.lastUpdated or "N/A", lastUpdatedColumnX, contentHeight))

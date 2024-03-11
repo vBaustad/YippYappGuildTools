@@ -16,6 +16,9 @@ local function SendBlacklistDataToGuild()
     local serializedData = SerializeBlacklistData()    
     if serializedData then
         AceComm:SendCommMessage(ADDON_PREFIX, serializedData, "GUILD")
+    else
+        print(string.format(localeTable.failedToSerialize))
+        return nil
     end
 end
 
@@ -86,12 +89,8 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
     end
     
     if message == "request" then 
-        -- Handle the request for profession data
-        local characterName = UnitName("player")
-        local serializedData = SerializeProfessionData(characterName)
-        if serializedData then
-            AceComm:SendCommMessage(ADDON_PREFIX, serializedData, "GUILD")
-        end
+        -- Handle the request for blacklist data
+        SendBlacklistDataToGuild()
     else
         local success, receivedData  = AceSerializer:Deserialize(message)
         if success then
