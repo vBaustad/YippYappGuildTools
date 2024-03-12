@@ -142,10 +142,9 @@ function CreateBlacklistInputFields(inputArea)
         if isValid then
             -- Add to blacklist (ensure your AddToBlacklist function handles this correctly)
             local characterData = {
-                name = name,
-                class = class,
-                reason = reason,
-                lastUpdated = date("%Y-%m-%d")
+                name = Capitalize(name),
+                class = Capitalize(class),
+                reason = reason
             }
                 
             AddToBlacklist(characterData)
@@ -170,14 +169,18 @@ function CreateBlacklistInputFields(inputArea)
     removeButton:SetText(localeTable.removeButton)
     removeButton:SetScript("OnClick", function()
         local name = nameInput:GetText()
-        name = Capitalize(name)
-        if name ~= "" and YippYappGuildTools_BlacklistDB[characterName] then
-            RemoveFromBlacklist(name)
-            UpdateStatusReport(name.." removed from blacklist")
-            -- Update the blacklist tab content with the new data
-            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
-            SendBlacklistDataToGuild()
-            ShowHideFrame(2) 
+        name = Capitalize(name) 
+        if name ~= "" then            
+            if YippYappGuildTools_BlacklistDB[name] then
+                RemoveFromBlacklist(name)
+                UpdateStatusReport(name.." removed from blacklist")
+                -- Update the blacklist tab content with the new data
+                UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)                
+                ShowHideFrame(2) 
+            else
+                -- Display error message if name input is not in db
+                UpdateStatusReport("Character does not exist in DB.")
+            end
         else
             -- Display error message if name input is empty
             UpdateStatusReport("Please enter a name to remove.")
@@ -442,13 +445,14 @@ function UpdateBlacklistContent(blacklistData)
 
     local contentHeight = initialYOffset - 5 - spacing  -- Start below the headers
 
-    for _, data in pairs(blacklistData) do
-        if data.class then
-            local classColor = RAID_CLASS_COLORS[string.upper(data.class)]   
+    for characterName, characterData in pairs(blacklistData) do
+        
+        if characterName ~= "lastUpdated" then
+            local classColor = RAID_CLASS_COLORS[string.upper(characterData.class)]   
 
 
-            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.name, nameColumnX, contentHeight, classColor))
-            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.reason, reasonColumnX, contentHeight))
+            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, characterName, nameColumnX, contentHeight, classColor))
+            table.insert(contentArea.dynamicContentList, createColumnText(contentArea, characterData.reason, reasonColumnX, contentHeight))
             
 
             -- Creating a horizontal line

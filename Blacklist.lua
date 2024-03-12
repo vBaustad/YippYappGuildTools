@@ -2,8 +2,9 @@ local ADDON_PREFIX = "YYBlacklist"
 local AceComm = LibStub("AceComm-3.0")
 local AceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 
-function RemoveFromBlacklist(characterName)
-    YippYappGuildTools_BlacklistDB[characterName] = nil
+-- Update timestamp function
+local function UpdateTimestamp()
+    YippYappGuildTools_BlacklistDB.lastUpdated = GetServerTime()
 end
 
 local function SerializeBlacklistData()    
@@ -27,21 +28,19 @@ function RequestLatestBlacklistData()
 end
 
 function AddToBlacklist(characterData)
-    --rename to UpdateOrAddCharacterlater 
-    local existingEntry = YippYappGuildTools_BlacklistDB[characterName]
-    if not existingEntry or existingEntry.lastUpdated < characterData.lastUpdated then
-        
+    if not YippYappGuildTools_BlacklistDB[characterData.name] then
+        YippYappGuildTools_BlacklistDB[characterData.name] = {class = characterData.class, reason = characterData.reason}
+        UpdateTimestamp() -- Update the global timestamp
+        SendBlacklistDataToGuild()  -- Optionally trigger a sync after updating
+    end    
+end
+
+function RemoveFromBlacklist(characterName)
+    if YippYappGuildTools_BlacklistDB[characterName] then
+        YippYappGuildTools_BlacklistDB[characterName] = nil
+        UpdateTimestamp() -- Update the global timestamp
+        SendBlacklistDataToGuild() -- Optionally trigger a sync after updating
     end
-    -- Prevent duplicate entries    
-    if not YippYappGuildTools_BlacklistDB[characterName] then
-        local characterInfo = {name = characterName, class = characterClass, reason = blacklistReason}
-        YippYappGuildTools_BlacklistDB[characterName] = characterInfo        
-    else
-        -- If the character is already in the blacklist, you might want to update or skip
-        print(string.format(localeTable["alreadyInBlacklist"], characterName))
-    end
-    
-    SendBlacklistDataToGuild(characterName) 
 end
 
 function IsCharacterBlacklisted(characterName)
@@ -54,10 +53,10 @@ function IsCharacterBlacklisted(characterName)
     end
 end
 
-function checkPartyMembersAgainstBlacklist()
+function CheckPartyMembersAgainstBlacklist()
 
     if not IsInGroup() then
-        blacklistNotificationPlayed = false -- Reset flag when not in a group
+        BlacklistNotificationPlayed = false -- Reset flag when not in a group
         return
     end
 
@@ -72,16 +71,16 @@ function checkPartyMembersAgainstBlacklist()
 
         if YippYappGuildTools_BlacklistDB[characterName] then
             blacklistMemberFound = true
-            if not blacklistNotificationPlayed then
+            if not BlacklistNotificationPlayed then
                 PlaySound(8959) -- Play a notification sound, this ID is an example
                 print(characterName .. " is in your blacklist!")
-                blacklistNotificationPlayed = true
+                BlacklistNotificationPlayed = true
             end
             break-- Exit the loop after finding the first blacklisted member  
         end
     end
     if not blacklistMemberFound then
-        blacklistNotificationPlayed = false -- Reset flag if no blacklisted members are found
+        BlacklistNotificationPlayed = false -- Reset flag if no blacklisted members are found
     end
 end
 
@@ -98,10 +97,12 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
     else
         local success, receivedData  = AceSerializer:Deserialize(message)
         if success then
-            for characterName, characterClass in pairs(receivedData) do
-                YippYappGuildTools_BlacklistDB[characterName] = characterClass
-            end
-            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+            -- If the local DB is empty or the incoming DB is more recent, update it
+            if not YippYappGuildTools_BlacklistDB.lastUpdated or YippYappGuildTools_BlacklistDB.lastUpdated == 0 or receivedData.lastUpdated > YippYappGuildTools_BlacklistDB.lastUpdated then
+                YippYappGuildTools_BlacklistDB = receivedData
+                -- Refresh your UI or other components
+                UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+            end            
         else
             print(string.format(localeTable.failedToDeserialize, sender))
         end
