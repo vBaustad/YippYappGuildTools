@@ -75,6 +75,24 @@ local function Capitalize(str)
     return str:sub(1,1):upper() .. str:sub(2):lower()
 end
 
+local function GetTimeDifference(lastUpdated)
+    local currentTime = GetServerTime()
+    local difference = currentTime - lastUpdated
+
+    local minutes = math.floor(difference / 60)
+    local hours = math.floor(minutes / 60)
+    local days = math.floor(hours / 24)
+
+    if days > 0 then
+        return days .. (days == 1 and " day" or " days") .. " ago"
+    elseif hours > 0 then
+        return hours .. (hours == 1 and " hour" or " hours") .. " ago"
+    else
+        return minutes .. (minutes == 1 and " minute" or " minutes") .. " ago"
+    end
+
+end
+
 local function ValidateInputs(name, class, reason)
     -- Define a list of valid classes
     local validClasses = {
@@ -430,6 +448,8 @@ function UpdateBlacklistContent(blacklistData)
 
     local nameColumnX = 10
     local reasonColumnX = 90
+    local lastUpdatedColumnX = 270
+    local formattedTime = GetTimeDifference(YippYappGuildTools_BlacklistDB.lastUpdated)
 
     -- Ensure dynamicContentList is initialized
     if not contentArea.dynamicContentList then
@@ -439,6 +459,7 @@ function UpdateBlacklistContent(blacklistData)
     -- Headers
     table.insert(contentArea.dynamicContentList, createHeader(contentArea, localeTable.blacklisted, nameColumnX, initialYOffset))
     table.insert(contentArea.dynamicContentList, createHeader(contentArea, localeTable.reason, reasonColumnX, initialYOffset))
+    table.insert(contentArea.dynamicContentList, createHeader(contentArea, localeTable.lastUpdated .. ": " .. formattedTime, lastUpdatedColumnX, initialYOffset))
 
     -- Horizontal line under headers
     table.insert(contentArea.dynamicContentList, createHorizontalLine(contentArea, 0, frame:GetWidth(), initialYOffset - 15))
