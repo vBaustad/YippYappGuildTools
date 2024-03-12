@@ -2,18 +2,26 @@ local ADDON_PREFIX = "YippYapp"
 local AceComm = LibStub("AceComm-3.0")
 local AceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 YippYappGuildTools_ProfessionsDB = YippYappGuildTools_ProfessionsDB or {}
-YippYappGuildTools_BlacklistDB = YippYappGuildTools_BlacklistDB or {}
+YippYappGuildTools_BlacklistDB = YippYappGuildTools_BlacklistDB or {lastUpdated = nil}
 
-SLASH_YYGT1 = "/YYGT"
+SLASH_YYGT1 = "/yygt"
 SlashCmdList["YYGT"] = function(msg)
-    ShowHideFrame(1)
+    if msg:lower() == "professions" then
+        ShowHideFrame(1)
+    elseif msg:lower() == "blacklist" then
+        ShowHideFrame(2)
+    elseif msg:lower() == "options" then
+        -- Option window code goes here once implemented
+        print("Options window not implemented yet.")
+    else
+        print("Invalid command. Use '/yygt professions', '/yygt blacklist', or '/yygt options(not implemented)'.")
+    end
 end
 
 function YippYappHandler()
     
     RequestLatestProfessionData() 
     RequestLatestBlacklistData()
-
     InitializeProfessionsFeature(YippYappGuildTools_ProfessionsDB)
     
 end
@@ -44,7 +52,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
         end)
     end
     if event == "GROUP_ROSTER_UPDATE" then                
-        checkPartyMembersAgainstBlacklist()
+        CheckPartyMembersAgainstBlacklist()
     end
     if event == "ADDON_LOADED" and arg1 == "YippYappGuildTools" then
         -- Call the function to create and display the minimap button
