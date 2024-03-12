@@ -12,7 +12,7 @@ local function SerializeBlacklistData()
     return serializedString
 end
 
-local function SendBlacklistDataToGuild()
+function SendBlacklistDataToGuild()
     local serializedData = SerializeBlacklistData()    
     if serializedData then
         AceComm:SendCommMessage(ADDON_PREFIX, serializedData, "GUILD")
@@ -26,8 +26,12 @@ function RequestLatestBlacklistData()
     AceComm:SendCommMessage(ADDON_PREFIX, "request", "GUILD")
 end
 
-function AddToBlacklist(characterName, characterClass, blacklistReason)
-
+function AddToBlacklist(characterData)
+    --rename to UpdateOrAddCharacterlater 
+    local existingEntry = YippYappGuildTools_BlacklistDB[characterName]
+    if not existingEntry or existingEntry.lastUpdated < characterData.lastUpdated then
+        
+    end
     -- Prevent duplicate entries    
     if not YippYappGuildTools_BlacklistDB[characterName] then
         local characterInfo = {name = characterName, class = characterClass, reason = blacklistReason}

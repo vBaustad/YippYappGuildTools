@@ -141,14 +141,22 @@ function CreateBlacklistInputFields(inputArea)
         local isValid, errorMessage = ValidateInputs(name, class, reason)
         if isValid then
             -- Add to blacklist (ensure your AddToBlacklist function handles this correctly)
-            AddToBlacklist(name, class, reason)
+            local characterData = {
+                name = name,
+                class = class,
+                reason = reason,
+                lastUpdated = date("%Y-%m-%d")
+            }
+                
+            AddToBlacklist(characterData)
             
             -- Clear inputs after successful submission
             nameInput:SetText("")
             classInput:SetText("")
             reasonInput:SetText("")
             
-            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB) 
+            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+            SendBlacklistDataToGuild() 
             ShowHideFrame(2)           
         else            
             UpdateStatusReport(errorMessage)
@@ -163,11 +171,12 @@ function CreateBlacklistInputFields(inputArea)
     removeButton:SetScript("OnClick", function()
         local name = nameInput:GetText()
         name = Capitalize(name)
-        if name ~= "" then
+        if name ~= "" and YippYappGuildTools_BlacklistDB[characterName] then
             RemoveFromBlacklist(name)
             UpdateStatusReport(name.." removed from blacklist")
             -- Update the blacklist tab content with the new data
             UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+            SendBlacklistDataToGuild()
             ShowHideFrame(2) 
         else
             -- Display error message if name input is empty

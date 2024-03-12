@@ -109,10 +109,7 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
     
     if message == "request" then
         -- Handle the request for profession data       
-        local serializedData = SerializeProfessionData()
-        if serializedData then
-            AceComm:SendCommMessage(ADDON_PREFIX, serializedData, "GUILD")
-        end
+        SendProfessionDataToGuild()
     else
         local success, incomingData = AceSerializer:Deserialize(message)
         if success then
