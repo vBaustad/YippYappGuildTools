@@ -100,22 +100,6 @@ local function ValidateInputs(name, class, reason)
     return true, ""
 end
 
--- function CreateBlacklistInput(labelText, parent, point, relativeTo, relativePoint, offsetX, offsetY)
---     local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
---     label:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY)
---     label:SetText(labelText)
-
---     local input = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
---     input:SetPoint("LEFT", label, "RIGHT", 10, 0)
---     input:SetSize(150, 20)
---     input:SetAutoFocus(false)  -- Avoid automatic focus
---     input:SetFontObject("ChatFontNormal")
---     input:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
---     input:SetFrameLevel(input:GetFrameLevel() + 1)  -- Make sure it's above its parent   
-    
---     return input
--- end
-
 function CreateBlacklistInput(labelText, parent, labelPoint, inputPoint, relativeTo, offsetX, offsetY, labelWidth, inputWidth)
     local label = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     label:SetPoint(labelPoint, relativeTo, offsetX, offsetY)
@@ -157,14 +141,22 @@ function CreateBlacklistInputFields(inputArea)
         local isValid, errorMessage = ValidateInputs(name, class, reason)
         if isValid then
             -- Add to blacklist (ensure your AddToBlacklist function handles this correctly)
-            AddToBlacklist(name, class, reason)
+            local characterData = {
+                name = name,
+                class = class,
+                reason = reason,
+                lastUpdated = date("%Y-%m-%d")
+            }
+                
+            AddToBlacklist(characterData)
             
             -- Clear inputs after successful submission
             nameInput:SetText("")
             classInput:SetText("")
             reasonInput:SetText("")
             
-            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB) 
+            UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+            SendBlacklistDataToGuild() 
             ShowHideFrame(2)           
         else            
             UpdateStatusReport(errorMessage)
@@ -179,11 +171,12 @@ function CreateBlacklistInputFields(inputArea)
     removeButton:SetScript("OnClick", function()
         local name = nameInput:GetText()
         name = Capitalize(name)
-        if name ~= "" then
+        if name ~= "" and YippYappGuildTools_BlacklistDB[characterName] then
             RemoveFromBlacklist(name)
             UpdateStatusReport(name.." removed from blacklist")
             -- Update the blacklist tab content with the new data
             UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
+            SendBlacklistDataToGuild()
             ShowHideFrame(2) 
         else
             -- Display error message if name input is empty
@@ -400,7 +393,7 @@ function UpdateProfessionsContent(guildMembersData)
             
             local professionsLine = table.concat(professionsStrs, ", ")
             local classColor = RAID_CLASS_COLORS[string.upper(data.class)]
-            
+            --print("character: " .. data.name .. " " .. "last updated: " .. data.lastUpdated)
             table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.name, nameColumnX, contentHeight, classColor))
             table.insert(contentArea.dynamicContentList, createColumnText(contentArea, professionsLine, professionColumnX, contentHeight))
             table.insert(contentArea.dynamicContentList, createColumnText(contentArea, data.lastUpdated or "N/A", lastUpdatedColumnX, contentHeight))

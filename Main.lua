@@ -37,7 +37,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
         C_Timer.After(2, function()  -- Delay to ensure guild info is available
             local result = checkguild()
             if result then
-                CreateMinimapButton()
+                --CreateMinimapButton()
                 YippYappHandler()
 
             end
@@ -46,10 +46,10 @@ frame:SetScript("OnEvent", function(self, event, ...)
     if event == "GROUP_ROSTER_UPDATE" then                
         checkPartyMembersAgainstBlacklist()
     end
-    -- if event == "ADDON_LOADED" and arg1 == "YippYappGuildTools" then
-    --     -- Call the function to create and display the minimap button
-    --     if CreateMinimapButton then
-    --         CreateMinimapButton()
-    --     end
-    -- end
+    if event == "ADDON_LOADED" and arg1 == "YippYappGuildTools" then
+        -- Call the function to create and display the minimap button
+        if CreateMinimapButton then
+            CreateMinimapButton()
+        end
+    end
 end)
