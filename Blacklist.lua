@@ -12,10 +12,13 @@ local function SerializeBlacklistData()
     return serializedString
 end
 
-local function SendBlacklistDataToGuild()
+function SendBlacklistDataToGuild()
     local serializedData = SerializeBlacklistData()    
     if serializedData then
         AceComm:SendCommMessage(ADDON_PREFIX, serializedData, "GUILD")
+    else
+        print(string.format(localeTable.failedToSerialize))
+        return nil
     end
 end
 
@@ -23,8 +26,12 @@ function RequestLatestBlacklistData()
     AceComm:SendCommMessage(ADDON_PREFIX, "request", "GUILD")
 end
 
-function AddToBlacklist(characterName, characterClass, blacklistReason)
-
+function AddToBlacklist(characterData)
+    --rename to UpdateOrAddCharacterlater 
+    local existingEntry = YippYappGuildTools_BlacklistDB[characterName]
+    if not existingEntry or existingEntry.lastUpdated < characterData.lastUpdated then
+        
+    end
     -- Prevent duplicate entries    
     if not YippYappGuildTools_BlacklistDB[characterName] then
         local characterInfo = {name = characterName, class = characterClass, reason = blacklistReason}
@@ -86,12 +93,8 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
     end
     
     if message == "request" then 
-        -- Handle the request for profession data
-        local characterName = UnitName("player")
-        local serializedData = SerializeProfessionData(characterName)
-        if serializedData then
-            AceComm:SendCommMessage(ADDON_PREFIX, serializedData, "GUILD")
-        end
+        -- Handle the request for blacklist data
+        SendBlacklistDataToGuild()
     else
         local success, receivedData  = AceSerializer:Deserialize(message)
         if success then

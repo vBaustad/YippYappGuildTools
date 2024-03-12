@@ -1,5 +1,6 @@
 ## Interface: 11501
-## Version: 0.0.1
+## Version: 0.2
+## X-Curse-Project-ID: 984390
 ## Title: YippYapp Guild Tools
 ## Notes: Addon created for the guild YippYapp on ChaosBolt-EU
 ## Author: Ryggsekken

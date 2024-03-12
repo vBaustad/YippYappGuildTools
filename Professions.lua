@@ -1,4 +1,4 @@
-local ADDON_PREFIX = "YTProfessions"
+local ADDON_PREFIX = "YYProfessions"
 local AceComm = LibStub("AceComm-3.0")
 local AceSerializer = LibStub:GetLibrary("AceSerializer-3.0")
 
@@ -40,10 +40,9 @@ local function getProfessionsAndSkill()
     return professions
 end
 
-local function SerializeProfessionData(characterName)
-    if YippYappGuildTools_ProfessionsDB[characterName] then
-        local dataToSerialize = YippYappGuildTools_ProfessionsDB[characterName]
-        local serializedString = AceSerializer:Serialize(dataToSerialize)
+local function SerializeProfessionData()
+    if YippYappGuildTools_ProfessionsDB then
+        local serializedString = AceSerializer:Serialize(YippYappGuildTools_ProfessionsDB)
         return serializedString
     else
         print(string.format(localeTable.failedToSerialize))
@@ -51,42 +50,45 @@ local function SerializeProfessionData(characterName)
     end
 end
 
-local function SendProfessionDataToGuild(characterName)    
-    local serializedData = SerializeProfessionData(characterName)    
+local function SendProfessionDataToGuild()    
+    local serializedData = SerializeProfessionData()    
     if serializedData then
         AceComm:SendCommMessage(ADDON_PREFIX, serializedData, "GUILD")
     end
 end
 
-function RequestLatestProfessionData()     
+function RequestLatestProfessionData()    
     AceComm:SendCommMessage(ADDON_PREFIX, "request", "GUILD")
 end
 
 function InitializeProfessionsFeature(YippYappGuildTools_ProfessionsDB)
     
     local characterInfo = GetCharacterInfo()    
-    local professionInfo = getProfessionsAndSkill()    
+    local professionInfo = getProfessionsAndSkill()   
 
+   
     -- Character name acts as a unique key
-    local characterName = characterInfo.name
-        
+    local characterName = characterInfo.name    
+
     -- Check if the character already exists in YippYappGuildTools_ProfessionsDB
     if YippYappGuildTools_ProfessionsDB[characterName] then
-        -- Update existing character data
-        YippYappGuildTools_ProfessionsDB[characterName].professions = professionInfo
-        YippYappGuildTools_ProfessionsDB[characterName].character = characterInfo
+        -- Update existing character data     
+        YippYappGuildTools_ProfessionsDB[characterName].professions = professionInfo        
+        YippYappGuildTools_ProfessionsDB[characterName].lastUpdated = characterInfo.lastUpdated
+        YippYappGuildTools_ProfessionsDB[characterName].level = characterInfo.level
     else
         -- Add new character data
         YippYappGuildTools_ProfessionsDB[characterName] = {
-            name = characterName,  -- Assuming characterName is a string variable with the character's name
+            name = characterName,
             level = characterInfo.level,
-            class = characterInfo.class,
+            class = characterInfo.class,            
+            lastUpdated = characterInfo.lastUpdated,
             professions = professionInfo,
-            lastUpdated = characterInfo.lastUpdated  -- Assuming this timestamp is generated when updating
         }
     end
 
-    SendProfessionDataToGuild(characterName) 
+    UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)
+    SendProfessionDataToGuild() 
 end
 
 -- Helper function to compare tables (simplified and specific for your use case)
@@ -106,24 +108,19 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
     end
     
     if message == "request" then
-        -- Handle the request for profession data
-        local characterName = UnitName("player")
-        local serializedData = SerializeProfessionData(characterName)
-        if serializedData then
-            AceComm:SendCommMessage(ADDON_PREFIX, serializedData, "GUILD")
-        end
+        -- Handle the request for profession data       
+        SendProfessionDataToGuild()
     else
-        local success, characterData = AceSerializer:Deserialize(message)
+        local success, incomingData = AceSerializer:Deserialize(message)
         if success then
-            if YippYappGuildTools_ProfessionsDB[characterName] then
-                
-            else
-                YippYappGuildTools_ProfessionsDB[characterData.name] = characterData
-                UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)
+            for characterName, professionInfo in pairs(incomingData) do
+                -- If the character does not exist in the local DB, or the incoming data is more recent, update it
+                if not YippYappGuildTools_ProfessionsDB[characterName] or (YippYappGuildTools_ProfessionsDB[characterName].lastUpdated < professionInfo.lastUpdated) then
+                    YippYappGuildTools_ProfessionsDB[characterName] = professionInfo
+                end
             end
-            -- if not AreTablesEqual(YippYappGuildTools_ProfessionsDB[characterData.name], characterData) then
-                
-            -- end
+            -- UpdateProfessionsContent
+            UpdateProfessionsContent(YippYappGuildTools_ProfessionsDB)
         else
             print(string.format(localeTable.failedToDeserialize, sender))
         end
