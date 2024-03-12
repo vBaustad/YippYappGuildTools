@@ -98,8 +98,10 @@ AceComm:RegisterComm(ADDON_PREFIX, function(prefix, message, distribution, sende
         local success, receivedData  = AceSerializer:Deserialize(message)
         if success then
             -- If the local DB is empty or the incoming DB is more recent, update it
-            if not YippYappGuildTools_BlacklistDB.lastUpdated or YippYappGuildTools_BlacklistDB.lastUpdated == 0 or receivedData.lastUpdated > YippYappGuildTools_BlacklistDB.lastUpdated then
+            if receivedData.lastUpdated and (not YippYappGuildTools_BlacklistDB.lastUpdated or YippYappGuildTools_BlacklistDB.lastUpdated == 0 or receivedData.lastUpdated > YippYappGuildTools_BlacklistDB.lastUpdated) then   
                 YippYappGuildTools_BlacklistDB = receivedData
+                --Update timestamp
+                UpdateTimestamp()
                 -- Refresh your UI or other components
                 UpdateBlacklistContent(YippYappGuildTools_BlacklistDB)
             end            
